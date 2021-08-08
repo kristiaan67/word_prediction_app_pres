@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Word Prediction App</title>
+  <meta charset="utf-8">
+  <meta name="description" content="Word Prediction App">
+  <meta name="author" content="Kristiaan De Jongh">
+  <meta name="generator" content="slidify" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  <link rel="stylesheet" href="libraries/frameworks/io2012/css/default.css" media="all" >
+  <link rel="stylesheet" href="libraries/frameworks/io2012/css/phone.css" 
+    media="only screen and (max-device-width: 480px)" >
+  <link rel="stylesheet" href="libraries/frameworks/io2012/css/slidify.css" >
+  <link rel="stylesheet" href="libraries/highlighters/highlight.js/css/tomorrow.css" />
+  <base target="_blank"> <!-- This amazingness opens all links in a new tab. -->  
+  
+  <!-- Grab CDN jQuery, fall back to local if offline -->
+  <script src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.7.min.js"></script>
+  <script>window.jQuery || document.write('<script src="libraries/widgets/quiz/js/jquery.js"><\/script>')</script> 
+  <script data-main="libraries/frameworks/io2012/js/slides" 
+    src="libraries/frameworks/io2012/js/require-1.0.8.min.js">
+  </script>
+  
+  
+
+</head>
+<body style="opacity: 0">
+  <slides class="layout-widescreen">
+    
+    <!-- LOGO SLIDE -->
+        <slide class="title-slide segue nobackground">
+  
+  <hgroup class="auto-fadein">
+    <h1>Word Prediction App</h1>
+    <h2>Data Science Specialization Capstone Project</h2>
+    <p>Kristiaan De Jongh<br/>Data Scientist</p>
+  </hgroup>
+  
+  <article></article>  
+  
+</slide>
+    
+
+    <!-- SLIDES -->
+    <slide class="" id="slide-1" style="background:;">
+  
+  <hgroup>
+    <h2>The Goal</h2>
+  </hgroup>
+  
+  <article data-timings="">
+    <p>The <b>Word Prediction App</b> will predict up to 6 words based on the 
+last words of a sentence. </p>
+
+<p>At least 1 <b>main word</b> must be present and the prediction context consists 
+of up to the last 3 main words of the sentence.</p>
+
+<p>A <b>main word</b> is a word that is not a stop word, not profane or misspelled
+and within the 95% word coverage of all the words in the corpus.</p>
+
+<p>The prediction algorithm used as data set a corpus of 3 documents, 4.269.678 sentences and 
+102.081.616 words scraped from the Internet, i.e. from blogs, news sites and twitter.</p>
+
+<pre><code>wc -l -w -c final/en_US/*.txt
+  899288 37334690 210160014 en_US.blogs.txt
+ 1010242 34372720 205811889 en_US.news.txt
+ 2360148 30374206 167105338 en_US.twitter.txt
+ 4269678 102081616 583077241 total
+</code></pre>
+
+<p><span style="font-size:75%;">The complete R code can be found 
+<a href="https://github.com/kristiaan67/CourseraCapstoneProject">here on GitHub</a> .</span></p>
+
+  </article>
+  <!-- Presenter Notes -->
+  
+</slide>
+
+<slide class="class" id="id" style="background:;">
+  
+  <hgroup>
+    <h2>The Prediction Data</h2>
+  </hgroup>
+  
+  <article data-timings="">
+    <p>First the original corpus was cleaned: i.e. its content converted to ASCII, punctuation
+and numbers removed and white space stripped. Furthermore stop words, profane language, 
+misspelled words and some patterns (URLs, email addresses, word and character repeats) 
+were removed. The cleaned sentences were finally stemmed and the corpus saved.</p>
+
+<p>Second the corpus was analyzed and the main outcome was <b>the list of main words</b>, 
+based on their frequency. The main words are all the words that make up <b>95%</b> 
+of all words in the corpus.</p>
+
+<p>The text analysis shows that to <b>cover 95%</b> only <b>5816 words (15.1%)</b> of
+all words are relevant.</p>
+
+<p><img src="assets/fig/unnamed-chunk-1-1.png" alt="plot of chunk unnamed-chunk-1"></p>
+
+<p><span style="font-size:75%;">The data cleaning and analysis process is described 
+<a href="https://rpubs.com/kristiaan67/capstone_milestone_report">in detail here</a>.</span></p>
+
+  </article>
+  <!-- Presenter Notes -->
+  
+</slide>
+
+<slide class="class" id="id" style="background:;">
+  
+  <hgroup>
+    <h2>The Prediction Model</h2>
+  </hgroup>
+  
+  <article data-timings="">
+    <p>For the prediction model <b>2-, 3- and 4-gram tables</b> were generated out of the cleaned
+corpus and a lookup table was built using the last word as prediction and the
+preceding words as context. To reduce the lookup tables a ngram entry was only kept
+if the prediction is and the context contains at least one main word. 
+The lookup tables are saved to CSV files.</p>
+
+<p>The prediction algorithm cleans the input sentence, retrieves up to the last 3
+main words (the context) and retrieves the 6 best matches starting with the 4-gram, 
+then the 3-gram and finally the 2-gram tables.</p>
+
+<pre><code>        context prediction compl_prediction freq ngram
+1: happi mother        day              day 2806     3
+2:       let us       know             know 2708     3
+3:    happi new       year             year 1834     3
+4:     two year        ago              ago 1594     3
+5: look forward        see              see 1593     3
+6:     new year        eve             even  932     3
+</code></pre>
+
+<p><span style="font-size:75%;">An example of the lookup table with a context of 2 words (3-gram table)</span></p>
+
+  </article>
+  <!-- Presenter Notes -->
+  
+</slide>
+
+<slide class="class" id="id" style="background:;">
+  
+  <hgroup>
+    <h2>The Word Prediction App</h2>
+  </hgroup>
+  
+  <article data-timings="">
+    <p>The App in action
+(<a href="https://kdejongh.shinyapps.io/word_prediction_app/">Link to the App on shinyapps.io</a>):</p>
+
+<iframe src="https://kdejongh.shinyapps.io/word_prediction_app/" style="height: 450px; margin-top: 0; border: 1px solid black;">
+[Link to the App on shinyapps.io](https://kdejongh.shinyapps.io/word_prediction_app/)
+</iframe>
+
+  </article>
+  <!-- Presenter Notes -->
+  
+</slide>
+
+    <slide class="backdrop"></slide>
+  </slides>
+  <div class="pagination pagination-small" id='io2012-ptoc' style="display:none;">
+    <ul>
+      
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=1 title='The Goal'>
+         1
+      </a>
+    </li>
+    
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=2 title='The Prediction Data'>
+         2
+      </a>
+    </li>
+    
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=3 title='The Prediction Model'>
+         3
+      </a>
+    </li>
+    
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=4 title='The Word Prediction App'>
+         4
+      </a>
+    </li>
+    
+    </ul>
+  </div>  <!--[if IE]>
+    <script 
+      src="http://ajax.googleapis.com/ajax/libs/chrome-frame/1/CFInstall.min.js">  
+    </script>
+    <script>CFInstall.check({mode: 'overlay'});</script>
+  <![endif]-->
+</body>
+  <!-- Load Javascripts for Widgets -->
+  
+  <!-- LOAD HIGHLIGHTER JS FILES -->
+  <script src="libraries/highlighters/highlight.js/highlight.pack.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  <!-- DONE LOADING HIGHLIGHTER JS FILES -->
+   
+  </html>

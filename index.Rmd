@@ -1,0 +1,151 @@
+---
+title       : Word Prediction App
+subtitle    : Data Science Specialization Capstone Project
+author      : Kristiaan De Jongh
+job         : Data Scientist
+framework   : io2012   # {io2012, html5slides, shower, dzslides, ...}
+highlighter : highlight.js  # {highlight.js, prettify, highlight}
+hitheme     : tomorrow      # 
+widgets     : []            # {mathjax, quiz, bootstrap}
+mode        : selfcontained # {standalone, draft}
+knit        : slidify::knit2slides
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+```{r libs, echo=FALSE, message=FALSE}
+library(tm)
+library(data.table)
+library(dplyr)
+library(ggplot2)
+library(ngram)
+```
+
+## The Goal
+
+The <b>Word Prediction App</b> will predict up to 6 words based on the 
+last words of a sentence. 
+
+At least 1 <b>main word</b> must be present and the prediction context consists 
+of up to the last 3 main words of the sentence.
+
+A <b>main word</b> is a word that is not a stop word, not profane or misspelled
+and within the 95% word coverage of all the words in the corpus.
+
+The prediction algorithm used as data set a corpus of 3 documents, 4.269.678 sentences and 
+102.081.616 words scraped from the Internet, i.e. from blogs, news sites and twitter.
+
+```
+wc -l -w -c final/en_US/*.txt
+  899288 37334690 210160014 en_US.blogs.txt
+ 1010242 34372720 205811889 en_US.news.txt
+ 2360148 30374206 167105338 en_US.twitter.txt
+ 4269678 102081616 583077241 total
+```
+
+<span style="font-size:75%;">The complete R code can be found 
+[here on GitHub](https://github.com/kristiaan67/CourseraCapstoneProject) .</span>
+
+--- .class #id 
+
+## The Prediction Data
+
+First the original corpus was cleaned: i.e. its content converted to ASCII, punctuation
+and numbers removed and white space stripped. Furthermore stop words, profane language, 
+misspelled words and some patterns (URLs, email addresses, word and character repeats) 
+were removed. The cleaned sentences were finally stemmed and the corpus saved.
+
+Second the corpus was analyzed and the main outcome was <b>the list of main words</b>, 
+based on their frequency. The main words are all the words that make up <b>95%</b> 
+of all words in the corpus.
+
+```{r coverage, echo=FALSE, cache=TRUE}
+
+retrieveWordData <- function(corpus) {
+    corpusDTM <- TermDocumentMatrix(corpus)
+    word_matrix <- sort(rowSums(as.matrix(corpusDTM)), decreasing = TRUE)
+    word_data <- data.table(word = names(word_matrix), freq = word_matrix)
+    setindex(word_data, word)
+    setorder(word_data, -freq)
+    return(word_data)
+}
+
+calculateCoverage <- function(thresholds, word_data_freq) {
+    tot_words <- length(word_data_freq)
+    tot_freq_words <- sum(word_data_freq)
+    cov_num_words <- c()
+    percents <- c()
+    for (coverage in thresholds) {
+        freq_words <- 0
+        num_words <- 0
+        while (freq_words < tot_freq_words * coverage) {
+            num_words <- num_words + 1
+            freq_words <- freq_words + word_data_freq[num_words]
+        }
+        cov_num_words <- c(cov_num_words, num_words)
+        percentage <- num_words * 100 / tot_words
+        percents <- c(percents, percentage)
+    }
+    return(data.table(coverage = thresholds, num_words = cov_num_words, 
+                      percentages = percents, min_freq = word_data_freq[cov_num_words]))
+}
+
+corpus <- VCorpus(DirSource('./data', pattern = "final_"), 
+                  readerControl = list(reader = readPlain, language = 'en_US'))
+word_data <- retrieveWordData(corpus)
+coverage_data <- calculateCoverage(c(0.5, 0.75, 0.9, .95), word_data$freq)
+```
+
+The text analysis shows that to <b>cover 95%</b> only <b>5816 words (15.1%)</b> of
+all words are relevant.
+
+```{r, echo=FALSE, fig.width=14, fig.height=3}
+ggplot(coverage_data, aes(x = sprintf("%d%%", coverage * 100), y = num_words)) + 
+    theme_bw() + theme(legend.position = "none", 
+                       panel.grid.major = element_blank(), 
+                       panel.grid.minor = element_blank()) + 
+    geom_col(fill = "dodgerblue") + 
+    geom_text(aes(label = sprintf("%d (%.1f%%)", num_words, percentages)), nudge_y = 200) + 
+    xlab("Coverage (%)") + ylab("Number of Words")
+```
+
+<span style="font-size:75%;">The data cleaning and analysis process is described 
+[in detail here](https://rpubs.com/kristiaan67/capstone_milestone_report).</span>
+
+
+--- .class #id 
+
+## The Prediction Model
+
+For the prediction model <b>2-, 3- and 4-gram tables</b> were generated out of the cleaned
+corpus and a lookup table was built using the last word as prediction and the
+preceding words as context. To reduce the lookup tables a ngram entry was only kept
+if the prediction is and the context contains at least one main word. 
+The lookup tables are saved to CSV files.
+
+The prediction algorithm cleans the input sentence, retrieves up to the last 3
+main words (the context) and retrieves the 6 best matches starting with the 4-gram, 
+then the 3-gram and finally the 2-gram tables.
+
+```{r lookup, echo=FALSE, cache=TRUE}
+lookup_table <- fread("./data/3-lookup_table.csv", colClasses = c(character(), character(), character(), numeric(), numeric(), numeric()))
+```
+
+```{r, comment="", echo=FALSE}
+head(select(lookup_table, -prop))
+```
+<span style="font-size:75%;">An example of the lookup table with a context of 2 words (3-gram table)</span>
+
+--- .class #id 
+
+## The Word Prediction App
+
+The App in action
+([Link to the App on shinyapps.io](https://kdejongh.shinyapps.io/word_prediction_app/)):
+
+<iframe src="https://kdejongh.shinyapps.io/word_prediction_app/" style="height: 450px; margin-top: 0; border: 1px solid black;">
+[Link to the App on shinyapps.io](https://kdejongh.shinyapps.io/word_prediction_app/)
+</iframe>
+
